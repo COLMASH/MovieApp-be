@@ -37,28 +37,37 @@ const resolvers = {
                 throw new ApolloError(`getGeneralMoviesInfo: ${error}`)
             }
         },
-        getDetailedFavoriteInfo: async (_, { input }, context) => {
+        getDetailedFavoriteInfo: async (_, __, context) => {
             if (!context.user) {
                 throw new AuthenticationError('Authentication was not successful')
             }
-            const { title, page } = input
             try {
-                const response = await axios.get(
-                    `http://www.omdbapi.com/?s=${title}&page=${page}&apikey=${process.env.OMDB_API_KEY}`
-                )
-                const movies = response.data.Search
-                const finalMovies = []
-                for (let movie of movies) {
+                const userId = context.user.id
+                const user = await User.findById(userId).populate({
+                    path: 'favorites',
+                    populate: { path: 'users', model: 'Favorite' }
+                })
+                const favorites = []
+                for (let favorite of user.favorites) {
                     const response = await axios.get(
-                        `http://www.omdbapi.com/?i=${movie.apiId}&apikey=${process.env.OMDB_API_KEY}`
+                        `http://www.omdbapi.com/?i=${favorite.apiId}&apikey=${process.env.OMDB_API_KEY}`
                     )
-                    const { Plot, Actors, Ratings } = response.data
-                    const Rating = Ratings[0].Value || 'No Rating Available'
+                    const { Title, Year, Type, Poster, Plot, Actors, Ratings } = response.data
+                    const Rating = Ratings[0].Value || 'No rating available'
                     const actorsArray = Actors.split(',').map(name => name.trim())
-                    movie = { ...movie, Plot, Actors: actorsArray, Rating }
-                    finalMovies.push(movie)
+                    favorite = {
+                        Title,
+                        Year,
+                        Type,
+                        Poster,
+                        apiId: favorite.apiId,
+                        Plot,
+                        Actors: actorsArray,
+                        Rating
+                    }
+                    favorites.push(favorite)
                 }
-                return finalMovies
+                return { movies: favorites, totalResults: user.favorites.length }
             } catch (error) {
                 throw new ApolloError(`getDetailedFavoriteInfo: ${error}`)
             }
