@@ -115,15 +115,16 @@ const resolvers = {
             const userId = context.user.id
             try {
                 const user = await User.findById(userId)
-                if (user.movies.includes(favoriteId)) {
-                    await User.updateOne({ _id: userId }, { $pull: { movies: favoriteId } })
-                    // await Movie.updateOne({ _id: favoriteId }, { $pull: { users: userId } })
+                const favorite = await Favorite.findOne({ imdbID: favoriteId })
+                if (user.favorites.includes(favorite._id)) {
+                    await User.updateOne({ _id: userId }, { $pull: { favorites: favorite._id } })
+                    await Favorite.updateOne({ _id: favorite._id }, { $pull: { users: userId } })
                     return 'Movie has been removed from favorites'
                 } else {
                     return "Movie hasn't been found"
                 }
             } catch (error) {
-                console.log(error)
+                throw new ApolloError(error)
             }
         }
     }
