@@ -15,11 +15,13 @@ const server = new ApolloServer({
         if (token) {
             try {
                 const user = jwt.verify(token.replace('Bearer ', ''), process.env.SECRET)
-                return {
-                    user
+                if (!user) {
+                    throw new Error('User not found')
+                } else {
+                    return { user }
                 }
             } catch (error) {
-                throw new AuthenticationError(`Authentication was not successful: ${error}`)
+                throw new AuthenticationError(`context: authentication was not successful -> ${error}`)
             }
         }
     }

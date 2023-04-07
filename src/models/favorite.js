@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
 
 const FavoriteSchema = mongoose.Schema({
-    imdbID: {
+    apiId: {
         type: String,
         required: true
     },

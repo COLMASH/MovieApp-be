@@ -14,10 +14,17 @@ const createToken = (userExists, secret, expiresIn) => {
 const resolvers = {
     Query: {
         getUser: async (_, { token }) => {
-            const userId = await jwt.verify(token, process.env.SECRET)
-            return userId
+            try {
+                const userId = await jwt.verify(token, process.env.SECRET)
+                if (!userId) {
+                    throw new Error('User not found')
+                }
+                return userId
+            } catch (error) {
+                throw new AuthenticationError(`getUser: ${error}`)
+            }
         },
-        getGeneralFavoritesInfo: async (_, { input }) => {
+        getGeneralMoviesInfo: async (_, { input }) => {
             const { title, page } = input
             try {
                 const response = await axios.get(
@@ -26,10 +33,13 @@ const resolvers = {
                 const movies = response.data.Search
                 return movies
             } catch (error) {
-                console.log(error)
+                throw new ApolloError(`getGeneralMoviesInfo: ${error}`)
             }
         },
-        getDetailedFavoriteInfo: async (_, { input }) => {
+        getDetailedFavoriteInfo: async (_, { input }, context) => {
+            if (!context.user) {
+                throw new AuthenticationError('Authentication was not successful')
+            }
             const { title, page } = input
             try {
                 const response = await axios.get(
@@ -39,7 +49,7 @@ const resolvers = {
                 const finalMovies = []
                 for (let movie of movies) {
                     const response = await axios.get(
-                        `http://www.omdbapi.com/?i=${movie.imdbID}&apikey=${process.env.OMDB_API_KEY}`
+                        `http://www.omdbapi.com/?i=${movie.apiId}&apikey=${process.env.OMDB_API_KEY}`
                     )
                     const { Plot, Actors, Ratings } = response.data
                     const Rating = Ratings[0].Value || 'No Rating Available'
@@ -49,40 +59,43 @@ const resolvers = {
                 }
                 return finalMovies
             } catch (error) {
-                console.log(error)
+                throw new ApolloError(`getDetailedFavoriteInfo: ${error}`)
             }
         }
     },
     Mutation: {
         newUser: async (_, { input }) => {
             const { email, password } = input
-            const userExists = await User.findOne({ email })
-            if (userExists) {
-                throw new Error(`User with email ${email} is already registered`)
-            }
-            const salt = await bcryptjs.genSalt(10)
-            input.password = await bcryptjs.hash(password, salt)
-
             try {
+                const userExists = await User.findOne({ email })
+                if (userExists) {
+                    throw new Error(`User with email ${email} is already registered`)
+                }
+                const salt = await bcryptjs.genSalt(10)
+                input.password = await bcryptjs.hash(password, salt)
                 const user = new User(input)
                 user.save()
                 return user
             } catch (error) {
-                console.log(error)
+                throw new ApolloError(`newUser: ${error}`)
             }
         },
         authUser: async (_, { input }) => {
             const { email, password } = input
-            const userExists = await User.findOne({ email })
-            if (!userExists) {
-                throw new Error(`User does not exist`)
-            }
-            const correctPassword = await bcryptjs.compare(password, userExists.password)
-            if (!correctPassword) {
-                throw new Error('Password is not correct')
-            }
-            return {
-                token: createToken(userExists, process.env.SECRET, '24h')
+            try {
+                const userExists = await User.findOne({ email })
+                if (!userExists) {
+                    throw new Error(`User does not exist`)
+                }
+                const correctPassword = await bcryptjs.compare(password, userExists.password)
+                if (!correctPassword) {
+                    throw new Error('Password is not correct')
+                }
+                return {
+                    token: createToken(userExists, process.env.SECRET, '24h')
+                }
+            } catch (error) {
+                throw new AuthenticationError(`authUser: ${error}`)
             }
         },
         addMovieToFavorites: async (_, { favoriteId }, context) => {
@@ -91,9 +104,9 @@ const resolvers = {
             }
             const userId = context.user.id
             try {
-                let favorite = await Favorite.findOne({ imdbID: favoriteId })
+                let favorite = await Favorite.findOne({ apiId: favoriteId })
                 if (!favorite) {
-                    favorite = new Favorite({ imdbID: favoriteId })
+                    favorite = new Favorite({ apiId: favoriteId })
                     favorite.save()
                 }
                 const user = await User.findById(userId)
@@ -105,7 +118,7 @@ const resolvers = {
                     return 'Movie has been added to favorites'
                 }
             } catch (error) {
-                throw new ApolloError(error)
+                throw new ApolloError(`addMovieToFavorites: ${error}`)
             }
         },
         removeMovieFromFavorites: async (_, { favoriteId }, context) => {
@@ -115,16 +128,16 @@ const resolvers = {
             const userId = context.user.id
             try {
                 const user = await User.findById(userId)
-                const favorite = await Favorite.findOne({ imdbID: favoriteId })
-                if (user.favorites.includes(favorite._id)) {
+                const favorite = await Favorite.findOne({ apiId: favoriteId })
+                if (favorite && user.favorites.includes(favorite._id)) {
                     await User.updateOne({ _id: userId }, { $pull: { favorites: favorite._id } })
                     await Favorite.updateOne({ _id: favorite._id }, { $pull: { users: userId } })
                     return 'Movie has been removed from favorites'
                 } else {
-                    return "Movie hasn't been found"
+                    throw new Error("Movie hasn't been found")
                 }
             } catch (error) {
-                throw new ApolloError(error)
+                throw new ApolloError(`removeMovieFromFavorites: ${error}`)
             }
         }
     }

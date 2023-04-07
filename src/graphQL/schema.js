@@ -20,7 +20,7 @@ const typeDefs = gql`
     type Movie {
         Title: String
         Year: String
-        imdbID: String
+        apiId: ID
         Type: String
         Poster: String
         Plot: String
@@ -41,15 +41,15 @@ const typeDefs = gql`
     type Query {
         # ----- Users -----
         getUser(token: String): User
-        # ------ Favorites -----
-        getGeneralFavoritesInfo(input: MovieInput): [Movie]
+        # ------ Favorites/Movies -----
+        getGeneralMoviesInfo(input: MovieInput): [Movie]
         getDetailedFavoriteInfo(input: MovieInput): [Movie]
     }
     type Mutation {
         # ----- Users -----
         newUser(input: UserInput): User
         authUser(input: AuthInput): Token
-        # ------ Favorites -----
+        # ------ Favorites/Movies -----
         addMovieToFavorites(favoriteId: ID!): String
         removeMovieFromFavorites(favoriteId: ID!): String
     }
