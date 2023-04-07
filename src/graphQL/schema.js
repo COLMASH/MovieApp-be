@@ -27,6 +27,10 @@ const typeDefs = gql`
         Actors: [String]
         Rating: String
     }
+    type MoviesResult {
+        movies: [Movie]
+        totalResults: Int
+    }
     type Token {
         token: String
     }
@@ -42,8 +46,8 @@ const typeDefs = gql`
         # ----- Users -----
         getUser(token: String): User
         # ------ Favorites/Movies -----
-        getGeneralMoviesInfo(input: MovieInput): [Movie]
-        getDetailedFavoriteInfo(input: MovieInput): [Movie]
+        getGeneralMoviesInfo(input: MovieInput): MoviesResult
+        getDetailedFavoriteInfo(input: MovieInput): MoviesResult
     }
     type Mutation {
         # ----- Users -----

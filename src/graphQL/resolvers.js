@@ -30,8 +30,9 @@ const resolvers = {
                 const response = await axios.get(
                     `http://www.omdbapi.com/?s=${title}&page=${page}&apikey=${process.env.OMDB_API_KEY}`
                 )
+                const { totalResults } = response.data
                 const movies = response.data.Search
-                return movies
+                return { movies, totalResults: parseInt(totalResults) }
             } catch (error) {
                 throw new ApolloError(`getGeneralMoviesInfo: ${error}`)
             }
