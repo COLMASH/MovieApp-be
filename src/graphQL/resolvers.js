@@ -1,4 +1,4 @@
-const { AuthenticationError } = require('apollo-server')
+const { AuthenticationError, ApolloError } = require('apollo-server')
 const User = require('../models/user')
 const Favorite = require('../models/favorite')
 const bcryptjs = require('bcryptjs')
@@ -17,7 +17,7 @@ const resolvers = {
             const userId = await jwt.verify(token, process.env.SECRET)
             return userId
         },
-        getGeneralMoviesInfo: async (_, { input }) => {
+        getGeneralFavoritesInfo: async (_, { input }) => {
             const { title, page } = input
             try {
                 const response = await axios.get(
@@ -29,7 +29,7 @@ const resolvers = {
                 console.log(error)
             }
         },
-        getDetailedMovieInfo: async (_, { input }) => {
+        getDetailedFavoriteInfo: async (_, { input }) => {
             const { title, page } = input
             try {
                 const response = await axios.get(
@@ -105,7 +105,7 @@ const resolvers = {
                     return 'Movie has been added to favorites'
                 }
             } catch (error) {
-                console.log(error)
+                throw new ApolloError(error)
             }
         },
         removeMovieFromFavorites: async (_, { favoriteId }, context) => {

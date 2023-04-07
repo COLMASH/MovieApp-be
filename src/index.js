@@ -1,4 +1,4 @@
-const { ApolloServer } = require('apollo-server')
+const { ApolloServer, AuthenticationError } = require('apollo-server')
 const typeDefs = require('./graphQL/schema')
 const resolvers = require('./graphQL/resolvers')
 const connectDB = require('./config/db')
@@ -19,8 +19,7 @@ const server = new ApolloServer({
                     user
                 }
             } catch (error) {
-                console.log('Something went wrong')
-                console.log(error)
+                throw new AuthenticationError(`Authentication was not successful: ${error}`)
             }
         }
     }

@@ -43,7 +43,7 @@ const typeDefs = gql`
         getUser(token: String): User
         # ------ Favorites -----
         getGeneralFavoritesInfo(input: MovieInput): [Movie]
-        getDetailedMovieInfo(input: MovieInput): [Movie]
+        getDetailedFavoriteInfo(input: MovieInput): [Movie]
     }
     type Mutation {
         # ----- Users -----
