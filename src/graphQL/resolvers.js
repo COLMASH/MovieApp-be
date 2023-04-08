@@ -55,16 +55,7 @@ const resolvers = {
                     const { Title, Year, Type, Poster, Plot, Actors, Ratings } = response.data
                     const Rating = Ratings[0].Value || 'No rating available'
                     const actorsArray = Actors.split(',').map(name => name.trim())
-                    favorite = {
-                        Title,
-                        Year,
-                        Type,
-                        Poster,
-                        apiId: favorite.apiId,
-                        Plot,
-                        Actors: actorsArray,
-                        Rating
-                    }
+                    favorite = { Title, Year, Type, Poster, apiId: favorite.apiId, Plot, Actors: actorsArray, Rating }
                     favorites.push(favorite)
                 }
                 return { movies: favorites, totalResults: user.favorites.length }
