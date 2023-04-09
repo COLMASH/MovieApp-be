@@ -38,14 +38,14 @@ const resolvers = {
             }
         },
         getDetailedFavoriteInfo: async (_, { favoriteId }, context) => {
-            if (!context.user) {
-                throw new AuthenticationError('Authentication was not successful')
-            }
             try {
                 let favoritesArray = []
                 if (favoriteId) {
                     favoritesArray.push({ apiId: favoriteId })
                 } else {
+                    if (!context.user) {
+                        throw new AuthenticationError('Authentication was not successful')
+                    }
                     const userId = context.user.id
                     const user = await User.findById(userId).populate({
                         path: 'favorites',
