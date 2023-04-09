@@ -37,18 +37,24 @@ const resolvers = {
                 throw new ApolloError(`getGeneralMoviesInfo: ${error}`)
             }
         },
-        getDetailedFavoriteInfo: async (_, __, context) => {
+        getDetailedFavoriteInfo: async (_, { favoriteId }, context) => {
             if (!context.user) {
                 throw new AuthenticationError('Authentication was not successful')
             }
             try {
-                const userId = context.user.id
-                const user = await User.findById(userId).populate({
-                    path: 'favorites',
-                    populate: { path: 'users', model: 'Favorite' }
-                })
+                let favoritesArray = []
+                if (favoriteId) {
+                    favoritesArray.push({ apiId: favoriteId })
+                } else {
+                    const userId = context.user.id
+                    const user = await User.findById(userId).populate({
+                        path: 'favorites',
+                        populate: { path: 'users', model: 'Favorite' }
+                    })
+                    favoritesArray = user.favorites
+                }
                 const favorites = []
-                for (let favorite of user.favorites) {
+                for (let favorite of favoritesArray) {
                     const response = await axios.get(
                         `http://www.omdbapi.com/?i=${favorite.apiId}&apikey=${process.env.OMDB_API_KEY}`
                     )
@@ -58,7 +64,7 @@ const resolvers = {
                     favorite = { Title, Year, Type, Poster, apiId: favorite.apiId, Plot, Actors: actorsArray, Rating }
                     favorites.push(favorite)
                 }
-                return { movies: favorites, totalResults: user.favorites.length }
+                return { movies: favorites, totalResults: favoritesArray.length }
             } catch (error) {
                 throw new ApolloError(`getDetailedFavoriteInfo: ${error}`)
             }
