@@ -4,7 +4,11 @@ const Favorite = require('../models/favorite')
 const bcryptjs = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const axios = require('axios')
+const AWS = require('aws-sdk')
 require('dotenv').config({ path: 'variables.env' })
+
+const secretsmanager = new AWS.SecretsManager()
+AWS.config.update({ region: `${process.env.AWS_REGION}` })
 
 const createToken = (userExists, secret, expiresIn) => {
     const { id, name, lastName, email } = userExists
@@ -15,7 +19,13 @@ const resolvers = {
     Query: {
         getUser: async (_, { token }) => {
             try {
-                const userId = await jwt.verify(token, process.env.SECRET)
+                const secretWordSecretArn = process.env.SECRET
+                const secretsmanagerResponse = await secretsmanager
+                    .getSecretValue({ SecretId: secretWordSecretArn })
+                    .promise()
+                const secretWordSecret = await secretsmanagerResponse
+                const secretString = JSON.parse(secretWordSecret.SecretString)
+                const userId = await jwt.verify(token, secretString['movie-app-secret-word'])
                 if (!userId) {
                     throw new Error('User not found')
                 }
@@ -27,8 +37,14 @@ const resolvers = {
         getGeneralMoviesInfo: async (_, { input }) => {
             const { title, page } = input
             try {
+                const apiKeySecretArn = process.env.OMDB_API_KEY
+                const secretsmanagerResponse = await secretsmanager
+                    .getSecretValue({ SecretId: apiKeySecretArn })
+                    .promise()
+                const apiKeySecret = await secretsmanagerResponse
+                const secretString = JSON.parse(apiKeySecret.SecretString)
                 const response = await axios.get(
-                    `http://www.omdbapi.com/?s=${title}&page=${page}&apikey=${process.env.OMDB_API_KEY}`
+                    `http://www.omdbapi.com/?s=${title}&page=${page}&apikey=${secretString['movie-app-api-key']}`
                 )
                 const { totalResults } = response.data
                 const movies = response.data.Search
@@ -53,10 +69,16 @@ const resolvers = {
                     })
                     favoritesArray = user.favorites
                 }
+                const apiKeySecretArn = process.env.OMDB_API_KEY
+                const secretsmanagerResponse = await secretsmanager
+                    .getSecretValue({ SecretId: apiKeySecretArn })
+                    .promise()
+                const apiKeySecret = await secretsmanagerResponse
+                const secretString = JSON.parse(apiKeySecret.SecretString)
                 const favorites = []
                 for (let favorite of favoritesArray) {
                     const response = await axios.get(
-                        `http://www.omdbapi.com/?i=${favorite.apiId}&apikey=${process.env.OMDB_API_KEY}`
+                        `http://www.omdbapi.com/?i=${favorite.apiId}&apikey=${secretString['movie-app-api-key']}`
                     )
                     const { Title, Year, Type, Poster, Plot, Actors, Ratings } = response.data
                     const Rating = Ratings[0].Value || 'No rating available'
@@ -98,8 +120,14 @@ const resolvers = {
                 if (!correctPassword) {
                     throw new Error('Password is not correct')
                 }
+                const secretWordSecretArn = process.env.SECRET
+                const secretsmanagerResponse = await secretsmanager
+                    .getSecretValue({ SecretId: secretWordSecretArn })
+                    .promise()
+                const secretWordSecret = await secretsmanagerResponse
+                const secretString = JSON.parse(secretWordSecret.SecretString)
                 return {
-                    token: createToken(userExists, process.env.SECRET, '24h')
+                    token: createToken(userExists, secretString['movie-app-secret-word'], '24h')
                 }
             } catch (error) {
                 throw new AuthenticationError(`authUser: ${error}`)

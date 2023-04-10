@@ -1,33 +1,30 @@
 service: movie-app-be
-frameworkVersion: '2'
+frameworkVersion: '3'
 
 provider:
   name: aws
   runtime: nodejs14.x
   region: us-east-1
   stage: prod
-  lambdaHashingVersion: 20201221
+  httpApi:
+    cors: true
 
 functions:
   graphql:
     handler: src/index.handler
+
     events:
-      - http:
-          path: /graphql
-          method: post
-          cors: true
+      - httpApi:
+          path: /
+          method: POST
+      - httpApi:
+          path: /
+          method: GET
 
     environment:
-      NODE_ENV: production
-      JWT_SECRET: ${ssm:/my-secrets/jwt-secret}
-      DB_HOST: ${ssm:/my-secrets/db-host}
-
-    iamRoleStatements:
-      - Effect: Allow
-        Action:
-          - secretsmanager:GetSecretValue
-        Resource: arn:aws:secretsmanager:us-east-1:123456789012:secret:/my-secrets/*
+      DB_MONGO: arn:aws:secretsmanager:us-east-1:039297709667:secret:movie-app-mongo-qJPRHv
+      SECRET: arn:aws:secretsmanager:us-east-1:039297709667:secret:movie-app-secret-word-BqyyYF
+      OMDB_API_KEY: arn:aws:secretsmanager:us-east-1:039297709667:secret:movie-app-api-key-lmyyzk
 
 plugins:
-  - serverless-apollonode
-  - serverless-secrets-plugin
+  - serverless-offline
