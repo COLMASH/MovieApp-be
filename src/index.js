@@ -14,8 +14,8 @@ connectDB()
 const server = new ApolloServer({
     typeDefs,
     resolvers,
-    context: async ({ req }) => {
-        const token = req.headers['authorization'] || ''
+    context: async ({ event }) => {
+        const token = event.headers['authorization'] || ''
         if (token) {
             try {
                 const secretWordSecretArn = process.env.SECRET
@@ -37,11 +37,9 @@ const server = new ApolloServer({
     }
 })
 
-// server.listen().then(({ url }) => console.log(`Server ready in URL: ${url}`))
-
 module.exports.handler = server.createHandler({
     cors: {
-        origin: '*',
+        origin: true,
         credentials: true
     }
 })
