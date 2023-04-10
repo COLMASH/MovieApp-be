@@ -1,0 +1,33 @@
+service: movie-app-be
+frameworkVersion: '2'
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  region: us-east-1
+  stage: prod
+  lambdaHashingVersion: 20201221
+
+functions:
+  graphql:
+    handler: src/index.handler
+    events:
+      - http:
+          path: /graphql
+          method: post
+          cors: true
+
+    environment:
+      NODE_ENV: production
+      JWT_SECRET: ${ssm:/my-secrets/jwt-secret}
+      DB_HOST: ${ssm:/my-secrets/db-host}
+
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - secretsmanager:GetSecretValue
+        Resource: arn:aws:secretsmanager:us-east-1:123456789012:secret:/my-secrets/*
+
+plugins:
+  - serverless-apollonode
+  - serverless-secrets-plugin

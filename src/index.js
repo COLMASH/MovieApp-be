@@ -1,4 +1,5 @@
-const { ApolloServer, AuthenticationError } = require('apollo-server')
+const { AuthenticationError } = require('apollo-server')
+const { ApolloServer } = require('apollo-server-micro')
 const typeDefs = require('./graphQL/schema')
 const resolvers = require('./graphQL/resolvers')
 const connectDB = require('./config/db')
@@ -27,4 +28,15 @@ const server = new ApolloServer({
     }
 })
 
-server.listen().then(({ url }) => console.log(`Server ready in URL: ${url}`))
+// server.listen().then(({ url }) => console.log(`Server ready in URL: ${url}`))
+
+const startServer = server.start()
+
+async function handler(req, res) {
+    await startServer
+    await server.createHandler({
+        path: '/api/graphql'
+    })(req, res)
+}
+
+module.exports = { handler }
