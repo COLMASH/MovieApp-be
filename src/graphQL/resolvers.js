@@ -46,15 +46,21 @@ const resolvers = {
                 const response = await axios.get(
                     `http://www.omdbapi.com/?s=${title}&page=${page}&apikey=${secretString['movie-app-api-key']}`
                 )
+                if (response.data.Response === 'False' && response.data.Error === 'Too many results.') {
+                    throw new Error(response.data.Error)
+                }
                 const { totalResults } = response.data
                 const moviesRaw = response.data.Search
-                const movies = moviesRaw.map(({ imdbID, ...rest }) => {
-                    return {
-                        apiId: imdbID,
-                        ...rest
-                    }
-                })
-                return { movies, totalResults: parseInt(totalResults) }
+                let movies = []
+                if (moviesRaw) {
+                    movies = moviesRaw.map(({ imdbID, ...rest }) => {
+                        return {
+                            apiId: imdbID,
+                            ...rest
+                        }
+                    })
+                }
+                return { movies, totalResults: totalResults ? parseInt(totalResults) : null }
             } catch (error) {
                 throw new ApolloError(`getGeneralMoviesInfo: ${error}`)
             }
@@ -92,7 +98,7 @@ const resolvers = {
                     favorite = { Title, Year, Type, Poster, apiId: favorite.apiId, Plot, Actors: actorsArray, Rating }
                     favorites.push(favorite)
                 }
-                return { movies: favorites, totalResults: favoritesArray.length }
+                return { movies: favorites, totalResults: favoritesArray ? favoritesArray.length : null }
             } catch (error) {
                 throw new ApolloError(`getDetailedFavoriteInfo: ${error}`)
             }
