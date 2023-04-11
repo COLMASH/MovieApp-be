@@ -47,7 +47,13 @@ const resolvers = {
                     `http://www.omdbapi.com/?s=${title}&page=${page}&apikey=${secretString['movie-app-api-key']}`
                 )
                 const { totalResults } = response.data
-                const movies = response.data.Search
+                const moviesRaw = response.data.Search
+                const movies = moviesRaw.map(({ imdbID, ...rest }) => {
+                    return {
+                        apiId: imdbID,
+                        ...rest
+                    }
+                })
                 return { movies, totalResults: parseInt(totalResults) }
             } catch (error) {
                 throw new ApolloError(`getGeneralMoviesInfo: ${error}`)
