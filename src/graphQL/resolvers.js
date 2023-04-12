@@ -65,7 +65,7 @@ const resolvers = {
                 throw new ApolloError(`getGeneralMoviesInfo: ${error}`)
             }
         },
-        getDetailedFavoriteInfo: async (_, { favoriteId }, context) => {
+        getDetailedFavoriteInfo: async (_, { favoriteId, page }, context) => {
             try {
                 let favoritesArray = []
                 if (favoriteId) {
@@ -88,7 +88,7 @@ const resolvers = {
                 const apiKeySecret = await secretsmanagerResponse
                 const secretString = JSON.parse(apiKeySecret.SecretString)
                 const favorites = []
-                for (let favorite of favoritesArray) {
+                for (let favorite of favoritesArray.slice(page * 10 - 10, page * 10)) {
                     const response = await axios.get(
                         `http://www.omdbapi.com/?i=${favorite.apiId}&apikey=${secretString['movie-app-api-key']}`
                     )
