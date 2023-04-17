@@ -139,7 +139,7 @@ const resolvers = {
                 const secretWordSecret = await secretsmanagerResponse
                 const secretString = JSON.parse(secretWordSecret.SecretString)
                 return {
-                    token: createToken(userExists, secretString['movie-app-secret-word'], '24h')
+                    token: createToken(userExists, secretString['movie-app-secret-word'], '365d')
                 }
             } catch (error) {
                 throw new AuthenticationError(`authUser: ${error}`)
