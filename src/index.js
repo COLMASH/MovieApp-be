@@ -24,7 +24,15 @@ const server = new ApolloServer({
                     .promise()
                 const secretWordSecret = await secretsmanagerResponse
                 const secretString = JSON.parse(secretWordSecret.SecretString)
-                const user = jwt.verify(token.replace('Bearer ', ''), secretString['movie-app-secret-word'])
+                let user
+                try {
+                    user = jwt.verify(token.replace('Bearer ', ''), secretString['movie-app-secret-word'])
+                } catch (error) {
+                    if (error.message === 'jwt expired') {
+                        return
+                    }
+                    throw new Error(error)
+                }
                 if (!user) {
                     throw new Error('User not found')
                 } else {
